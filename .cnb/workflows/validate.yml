@@ -1,0 +1,31 @@
+# 中国分钟级降水预报 · 发布前校验流水线（cnb.cool）
+# 触发：任意分支 push。
+# 两个关卡：
+#   1) pytest  —— 用 mock 接口真实加载集成，覆盖 数值解析 / 多地点配置流 / coordinator 请求 / sensor 实体创建。
+#                不依赖真实网络与真实 HA 实例，是"发布前保证没问题"的主关卡。
+#   2) hassfest —— 校验 manifest.json、目录结构、翻译文件与配置流是否一致（HACS 收录硬性门槛）。
+#                通过官方 Docker 镜像运行；若 cnb runner 无法拉取 ghcr.io，本步标记 allowFailure 不阻塞合并，
+#                此时请在本地用 `docker run --rm -v "$PWD":/github/workspace ghcr.io/home-assistant/hassfest:latest` 补跑。
+
+"**":
+  push:
+    - runner:
+        tags: cnb:arch:amd64
+      docker:
+        image: python:3.14
+      services:
+        - docker
+      stages:
+        - name: 安装测试依赖
+          script: |
+            python -m pip install --upgrade pip
+            pip install -r requirements_test.txt
+
+        - name: 运行 pytest（解析 / 配置流 / 传感器逻辑）
+          script: pytest -qq
+
+        - name: hassfest 结构合规校验（manifest / 翻译 / 配置流一致性）
+          image: docker:cli
+          allowFailure: true
+          script: |
+            docker run --rm -v "$PWD":/github/workspace ghcr.io/home-assistant/hassfest:latest

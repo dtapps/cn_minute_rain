@@ -1,0 +1,24 @@
+branch:
+  - buttons:
+      - name: 发布集成
+        description: 自动升级 manifest.json 版本号并发布 Release（默认 patch 升级）
+        event: web_trigger_release_integration # 触发的 CI 事件名，需在 .cnb.yml 中 include 对应工作流
+        permissions:
+          roles:
+            - owner
+            - master
+            - developer
+        inputs:
+          bump:
+            name: 版本升级方式
+            description: patch=修订号+1（1.0.0→1.0.1）；minor=次版本+1（1.0.0→1.1.0）；major=主版本+1（1.0.0→2.0.0）
+            required: true
+            type: select
+            default: patch
+            options:
+              - name: 修订版本 (patch)
+                value: patch
+              - name: 次版本 (minor)
+                value: minor
+              - name: 主版本 (major)
+                value: major

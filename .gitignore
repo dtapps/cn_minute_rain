@@ -1,0 +1,12 @@
+# Python / 测试产物
+.venv/
+.venv313/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# CNB 发布流水线临时产物（不应提交进仓库）
+LATEST_CHANGELOG.md
+release_options.yml

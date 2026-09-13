@@ -1,0 +1,78 @@
+'**':
+  # 按钮「发布集成」触发：升版本号 → pytest/hassfest 把关 → 提交推送 → changelog → git:release。
+  # 触发事件名需与 .cnb/web_trigger.yml 的 event 对应，并在 .cnb.yml 中 include 本文件。
+  web_trigger_release_integration:
+    - runner:
+        tags: cnb:arch:amd64
+      services:
+        - docker
+      docker:
+        image: python:3.14
+      stages:
+        - name: pytest 把关
+          script: |
+            pip install -q -r requirements_test.txt
+            pytest -qq
+
+        - name: hassfest 结构校验
+          image: docker:cli
+          allowFailure: true
+          script: docker run --rm -v "$PWD":/github/workspace ghcr.io/home-assistant/hassfest:latest
+
+        - name: 升级 manifest 版本号
+          script: |
+            NEW=$(python - <<'PY'
+            import json, os
+            path = "custom_components/cn_minute_rain/manifest.json"
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            major, minor, patch = (int(x) for x in data.get("version", "0.0.0").split("."))
+            bump = (os.environ.get("bump") or "patch").strip().lower()
+            if bump == "major":
+                major, minor, patch = major + 1, 0, 0
+            elif bump == "minor":
+                minor, patch = minor + 1, 0
+            else:
+                patch += 1
+            data["version"] = f"{major}.{minor}.{patch}"
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.write("\n")
+            print(data["version"])
+            PY
+            )
+            echo "##[set-output new_version=$NEW]"
+          exports:
+            new_version: NEW_VERSION
+
+        # CNB 无内置 commit 步骤，git 提交推送无法省略；已压到最少行
+        - name: 提交推送
+          script: |
+            git config user.email "cnb@cnb.cool"
+            git config user.name "CNB"
+            git add custom_components/cn_minute_rain/manifest.json
+            git commit -m "chore: release v${NEW_VERSION}"
+            git push "https://${CNB_TOKEN_USER_NAME}:${CNB_TOKEN}@${CNB_REPO_URL_HTTPS#https://}" HEAD
+
+        # https://docs.cnb.cool/zh/plugin/public/cnbcool/changelog.html
+        # 用 exports 把日志导出为变量，避免插件往仓库里写文件
+        - name: 生成 Release 日志
+          image: cnbcool/changelog
+          allowFailure: true # 首个 tag / 两 tag 间无变更时无法生成，交由下一步兜底
+          exports:
+            latestChangeLog: RELEASE_NOTES
+
+        # 把日志落盘（带兜底：首次发布或空日志时给默认说明），并生成 git:release 选项
+        - name: 准备发布说明与选项
+          script: |
+            printf '%s' "${RELEASE_NOTES:-版本 v${NEW_VERSION} 发布}" > LATEST_CHANGELOG.md
+            cat > release_options.yml << EOF
+            tag: v${NEW_VERSION}
+            title: "v${NEW_VERSION}"
+            descriptionFromFile: LATEST_CHANGELOG.md
+            EOF
+
+        # https://docs.cnb.cool/zh/build/internal-steps.html#git-release
+        - name: 发布 Release
+          type: git:release
+          optionsFrom: release_options.yml

@@ -1,0 +1,60 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a location",
+        "data": {
+          "name": "Location name",
+          "longitude": "Longitude",
+          "latitude": "Latitude"
+        }
+      },
+      "add_another": {
+        "title": "Add another location?",
+        "data": {
+          "add_another": "Add another location"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "nearby": {
+        "name": "Nearby Rain"
+      },
+      "tip": {
+        "name": "Rain Tip"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage locations",
+        "data": {
+          "action": {
+            "name": "Action",
+            "options": {
+              "keep": "Keep current",
+              "edit": "Reset locations"
+            }
+          }
+        }
+      },
+      "user": {
+        "title": "Add a location",
+        "data": {
+          "name": "Location name",
+          "longitude": "Longitude",
+          "latitude": "Latitude"
+        }
+      },
+      "add_another": {
+        "title": "Add another location?",
+        "data": {
+          "add_another": "Add another location"
+        }
+      }
+    }
+  }
+}
