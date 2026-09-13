@@ -1,3 +1,0 @@
-include:
-  - .cnb/workflows/validate.yml
-  - .cnb/workflows/release.yml

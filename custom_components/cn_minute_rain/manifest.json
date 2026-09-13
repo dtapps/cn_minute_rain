@@ -1,9 +1,9 @@
 {
   "domain": "cn_minute_rain",
   "name": "中国分钟级降水预报",
-  "codeowners": ["@dtapp"],
+  "codeowners": ["@dtapps"],
   "config_flow": true,
-  "documentation": "https://cnb.cool/dtapp/cn_minute_rain",
+  "documentation": "https://github.com/dtapps/cn_minute_rain",
   "iot_class": "cloud_polling",
   "requirements": [],
   "version": "1.0.0"

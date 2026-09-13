@@ -5,6 +5,6 @@
 # pycares 的守护线程 _run_safe_shutdown_loop 误报 threadleak 而失败。
 # 0.13.365 已内置对该线程的忽略，请勿随意降级。
 #
-# 该版本 Requires-Python >=3.14，因此 .cnb 流水线里的 Python 镜像必须 >=3.14
+# 该版本 Requires-Python >=3.14，因此 .github 流水线里的 Python 镜像必须 >=3.14
 # （本地 .venv 与客户端的 python:3.14 一致），否则装不到此版本。
 pytest-homeassistant-custom-component==0.13.365

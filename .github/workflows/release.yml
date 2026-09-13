@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "版本号递增方式"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 设置 Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: pytest 把关
+        run: |
+          pip install -q -r requirements_test.txt
+          pytest -qq
+
+      - name: 升级 manifest 版本号
+        id: bump
+        run: |
+          NEW=$(python - <<'PY'
+          import json
+          path = "custom_components/cn_minute_rain/manifest.json"
+          with open(path, encoding="utf-8") as f:
+              data = json.load(f)
+          major, minor, patch = (int(x) for x in data.get("version", "0.0.0").split("."))
+          bump = "${{ github.event.inputs.bump }}".strip().lower()
+          if bump == "major":
+              major, minor, patch = major + 1, 0, 0
+          elif bump == "minor":
+              minor, patch = minor + 1, 0
+          else:
+              patch += 1
+          data["version"] = f"{major}.{minor}.{patch}"
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          print(data["version"])
+          PY
+          )
+          echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
+
+      - name: 提交并推送
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git add custom_components/cn_minute_rain/manifest.json
+          git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
+          git push
+
+      - name: 发布 GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          name: v${{ steps.bump.outputs.new_version }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

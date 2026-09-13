@@ -24,14 +24,12 @@ entities:
 2. 仓库地址填入：
 
    ```
-   https://cnb.cool/dtapp/cn_minute_rain
+   https://github.com/dtapps/cn_minute_rain
    ```
 
 3. 类别选择 **集成 (Integration)**，点击「添加」。
 4. 在 HACS 的「集成」列表里搜索 **中国分钟级降水预报**，点击「下载」并重启 Home Assistant。
 5. 「设置 → 设备与服务 → 添加集成」，搜索 **中国分钟级降水预报**，按提示填写地点即可。
-
-> 若你的 HACS 版本仅对接 GitHub，无法直接添加 cnb.cool 仓库，请改用下方的**手动安装**方式。
 
 ### 方式二：手动安装
 
