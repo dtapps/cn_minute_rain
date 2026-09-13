@@ -32,13 +32,7 @@
       "init": {
         "title": "管理地点",
         "data": {
-          "action": {
-            "name": "操作",
-            "options": {
-              "keep": "保持现状",
-              "edit": "重新设置地点"
-            }
-          }
+          "action": "操作"
         }
       },
       "user": {
@@ -54,6 +48,14 @@
         "data": {
           "add_another": "继续添加地点"
         }
+      }
+    }
+  },
+  "selector": {
+    "action": {
+      "options": {
+        "keep": "保持现状",
+        "edit": "重新设置地点"
       }
     }
   }

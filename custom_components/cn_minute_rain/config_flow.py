@@ -3,6 +3,11 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+)
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import CONF_LATITUDE, CONF_LONGITUDE, CONF_LOCATIONS, CONF_NAME, DOMAIN
@@ -30,7 +35,15 @@ ADD_SCHEMA = vol.Schema(
 
 OPT_INIT_SCHEMA = vol.Schema(
     {
-        vol.Required("action", default="keep"): vol.In(["keep", "edit"]),
+        vol.Required("action", default="keep"): SelectSelector(
+            SelectSelectorConfig(
+                options=[
+                    SelectOptionDict(value="keep", label="keep"),
+                    SelectOptionDict(value="edit", label="edit"),
+                ],
+                mode="dropdown",
+            )
+        ),
     }
 )
 
