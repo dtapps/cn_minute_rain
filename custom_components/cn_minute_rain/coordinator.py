@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -12,7 +13,6 @@ from .const import (
     CONF_LATITUDE,
     CONF_LONGITUDE,
     CONF_NAME,
-    DEFAULT_SCAN_INTERVAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,7 +42,9 @@ def parse_values(raw: Any) -> list[float]:
 class CnMinuteRainCoordinator(DataUpdateCoordinator):
     """每分钟级降水协调器，每个地点一个实例。"""
 
-    def __init__(self, hass: HomeAssistant, session, location: dict) -> None:
+    def __init__(
+        self, hass: HomeAssistant, session, location: dict, update_interval: timedelta
+    ) -> None:
         self.session = session
         # 注意：DataUpdateCoordinator 基类会把传入的 name 参数存到 self.name，
         # 因此地点名不能用 self.name，改用 self.location_name 以免被基类覆盖。
@@ -53,7 +55,7 @@ class CnMinuteRainCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=f"cn_minute_rain_{self.location_name}",
-            update_interval=DEFAULT_SCAN_INTERVAL,
+            update_interval=update_interval,
         )
 
     async def _async_update_data(self) -> dict[str, Any]:

@@ -11,6 +11,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers import entity_registry as er
+from pypinyin import lazy_pinyin
 
 from .const import DOMAIN, PRECIP_WINDOW_MINUTES
 from .coordinator import CnMinuteRainCoordinator
@@ -20,10 +21,12 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="nearby",
+        translation_key="nearby",
         icon="mdi:weather-pouring",
     ),
     SensorEntityDescription(
         key="tip",
+        translation_key="tip",
         icon="mdi:weather-rainy",
     ),
 )
@@ -101,6 +104,10 @@ class CnMinuteRainSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coord)
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{coord.location_name}_{description.key}"
+        # 实体 ID 形如 sensor.cn_minute_rain_<地点拼音>_<nearby|tip>：
+        # 带集成名便于识别，地点拼音保证中文也能生成可读、不撞车的 ASCII ID。
+        loc_slug = "_".join(lazy_pinyin(coord.location_name))
+        self._attr_suggested_object_id = f"cn_minute_rain_{loc_slug}_{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}_{coord.location_name}")},
             name=coord.location_name,

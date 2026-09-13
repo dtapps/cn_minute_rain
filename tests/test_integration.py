@@ -1,6 +1,7 @@
 """End-to-end tests for config flow, coordinator and sensor setup (mocked API)."""
 from __future__ import annotations
 
+from datetime import timedelta
 from yarl import URL
 
 from homeassistant.data_entry_flow import FlowResultType
@@ -61,7 +62,9 @@ async def test_user_flow_add_two_locations(hass) -> None:
 
 async def test_coordinator_update(hass, aioclient_mock) -> None:
     loc = {CONF_NAME: "测试", CONF_LONGITUDE: 120.0, CONF_LATITUDE: 30.0}
-    coord = CnMinuteRainCoordinator(hass, async_get_clientsession(hass), loc)
+    coord = CnMinuteRainCoordinator(
+        hass, async_get_clientsession(hass), loc, timedelta(seconds=300)
+    )
     aioclient_mock.get(_expected_url(120.0, 30.0), json=API_RESPONSE)
 
     data = await coord._async_update_data()

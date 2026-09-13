@@ -6,7 +6,8 @@
         "data": {
           "name": "Location name",
           "longitude": "Longitude",
-          "latitude": "Latitude"
+          "latitude": "Latitude",
+          "scan_interval": "Update interval (seconds)"
         }
       },
       "add_another": {
@@ -40,7 +41,8 @@
         "data": {
           "name": "Location name",
           "longitude": "Longitude",
-          "latitude": "Latitude"
+          "latitude": "Latitude",
+          "scan_interval": "Update interval (seconds)"
         }
       },
       "add_another": {

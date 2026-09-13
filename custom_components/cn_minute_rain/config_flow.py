@@ -10,21 +10,32 @@ from homeassistant.helpers.selector import (
 )
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import CONF_LATITUDE, CONF_LONGITUDE, CONF_LOCATIONS, CONF_NAME, DOMAIN
+from .const import (
+    CONF_LATITUDE,
+    CONF_LONGITUDE,
+    CONF_LOCATIONS,
+    CONF_NAME,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL_SECONDS,
+    DOMAIN,
+)
 
-def _loc_schema(hass) -> vol.Schema:
-    """经纬度默认取当前 HA 实例所在的经纬度。"""
-    return vol.Schema(
-        {
-            vol.Required(CONF_NAME): str,
-            vol.Required(CONF_LONGITUDE, default=hass.config.longitude): vol.Coerce(
-                float
-            ),
-            vol.Required(CONF_LATITUDE, default=hass.config.latitude): vol.Coerce(
-                float
-            ),
-        }
-    )
+def _loc_schema(
+    hass,
+    include_interval: bool = False,
+    scan_interval_default: int = DEFAULT_SCAN_INTERVAL_SECONDS,
+) -> vol.Schema:
+    """经纬度默认取当前 HA 实例所在的经纬度；首个地点时附带“更新间隔”输入。"""
+    fields: dict = {
+        vol.Required(CONF_NAME): str,
+        vol.Required(CONF_LONGITUDE, default=hass.config.longitude): vol.Coerce(float),
+        vol.Required(CONF_LATITUDE, default=hass.config.latitude): vol.Coerce(float),
+    }
+    if include_interval:
+        fields[vol.Required(CONF_SCAN_INTERVAL, default=scan_interval_default)] = vol.Coerce(
+            int
+        )
+    return vol.Schema(fields)
 
 
 ADD_SCHEMA = vol.Schema(
@@ -55,6 +66,8 @@ class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._locations: list[dict] = []
+        self._scan_interval = DEFAULT_SCAN_INTERVAL_SECONDS
+        self._interval_captured = False
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:
@@ -65,8 +78,20 @@ class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_LATITUDE: user_input[CONF_LATITUDE],
                 }
             )
+            if not self._interval_captured:
+                self._scan_interval = user_input.get(
+                    CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS
+                )
+                self._interval_captured = True
             return await self.async_step_add_another()
-        return self.async_show_form(step_id="user", data_schema=_loc_schema(self.hass))
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_loc_schema(
+                self.hass,
+                include_interval=not self._interval_captured,
+                scan_interval_default=self._scan_interval,
+            ),
+        )
 
     async def async_step_add_another(self, user_input=None) -> FlowResult:
         if user_input is not None:
@@ -83,7 +108,10 @@ class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             title += f" 等 {len(self._locations)} 个地点"
         return self.async_create_entry(
             title=title,
-            data={CONF_LOCATIONS: self._locations},
+            data={
+                CONF_LOCATIONS: self._locations,
+                CONF_SCAN_INTERVAL: self._scan_interval,
+            },
         )
 
     @staticmethod
@@ -97,11 +125,16 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
         self.config_entry = config_entry
         self._locations: list[dict] = list(config_entry.data.get(CONF_LOCATIONS, []))
+        self._scan_interval = config_entry.data.get(
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS
+        )
+        self._interval_captured = False
 
     async def async_step_init(self, user_input=None) -> FlowResult:
         if user_input is not None:
             if user_input["action"] == "edit":
                 self._locations = []
+                self._interval_captured = False
                 return await self.async_step_user()
             return self.async_create_entry(title="", data={})
         return self.async_show_form(step_id="init", data_schema=OPT_INIT_SCHEMA)
@@ -115,8 +148,20 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
                     CONF_LATITUDE: user_input[CONF_LATITUDE],
                 }
             )
+            if not self._interval_captured:
+                self._scan_interval = user_input.get(
+                    CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS
+                )
+                self._interval_captured = True
             return await self.async_step_add_another()
-        return self.async_show_form(step_id="user", data_schema=_loc_schema(self.hass))
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_loc_schema(
+                self.hass,
+                include_interval=not self._interval_captured,
+                scan_interval_default=self._scan_interval,
+            ),
+        )
 
     async def async_step_add_another(self, user_input=None) -> FlowResult:
         if user_input is not None:
@@ -126,7 +171,11 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
                 return await self.async_step_user()
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
-                data={**self.config_entry.data, CONF_LOCATIONS: self._locations},
+                data={
+                    **self.config_entry.data,
+                    CONF_LOCATIONS: self._locations,
+                    CONF_SCAN_INTERVAL: self._scan_interval,
+                },
             )
             return self.async_create_entry(title="", data={})
         return self.async_show_form(step_id="add_another", data_schema=ADD_SCHEMA)

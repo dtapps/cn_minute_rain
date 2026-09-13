@@ -5,13 +5,57 @@ Home Assistant 自定义集成，基于[中国天气网分钟级降水 API](http
 - **`<地点>临近降雨`**：状态为预报文案（如“未来2小时不会降雨”），属性含 `values`（强度数组）、`time`、`longitude`、`latitude`。
 - **`<地点>降雨提示`**：由强度数组推算的人话状态 —— `无雨` / `🌧️ 正在下雨，预计持续约 X 分钟` / `⏳ 约 Y 分钟后开始下雨`，图标随状态切换。
 
-示例卡片（无雨时状态为“无雨”，可用 `state` 条件让卡片自动隐藏）：
+每个地点会生成两个实体，对象 ID 固定为：
+
+- `sensor.cn_minute_rain_<地点拼音>_nearby` —— **临近降雨**：状态为预报文案，属性含 `values`(强度数组)、`time`、`longitude`、`latitude`。
+- `sensor.cn_minute_rain_<地点拼音>_tip` —— **降雨提示**：状态为 `无雨` / `正在下雨…` / `约 Y 分钟后开始下雨`，属性含 `minutes_to_rain`、`rain_minutes`。
+
+> 不确定拼音时，可在「设置 → 设备与服务 → 中国分钟级降水预报 → 设备 → 实体」里直接复制 `entity_id`。
+
+示例卡片（降雨提示为「无雨」时整块自动隐藏，临近降雨用图表展示未来 2 小时强度）：
 
 ```yaml
-type: entities
-entities:
-  - entity: sensor.shen_zhen_zhan_yuan_ge_lin_jin_jiang_yu
-  - entity: sensor.shen_zhen_zhan_yuan_ge_jiang_yu_ti_shi
+cards:
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: sensor.cn_minute_rain_<地点拼音>_tip
+        state_not: 无雨
+    card:
+      type: entity
+      entity: sensor.cn_minute_rain_<地点拼音>_tip
+      name: 临近降雨提示
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: 🌧️ 临近降雨预报
+      show_states: true
+      colorize_states: true
+    graph_span: 2h
+    span:
+      start: minute
+    apex_config:
+      chart:
+        height: 180px
+      yaxis:
+        - title:
+            text: 降雨量 (mm)
+          decimalsInFloat: 2
+    series:
+      - entity: sensor.cn_minute_rain_<地点拼音>_nearby
+        name: 降雨量
+        data_generator: |
+          const values = entity.attributes.values || [];
+          const now = new Date();
+          return values.map((value, index) => {
+            const time = new Date(now.getTime() + index * 6 * 60 * 1000);
+            return [time, value];
+          });
+        type: area
+        color: '#03A9F4'
+        stroke_width: 2
+        show:
+          in_header: false
 ```
 
 ---
@@ -50,7 +94,7 @@ entities:
    - 选「否」→ 完成，所有地点归入同一个集成条目。
 3. 后续可在集成条目的「配置」(选项流) 中选择「重新设置地点」来增删地点。
 
-> 每个地点每 5 分钟请求一次接口（与原始 `rest` 传感器一致）。
+> 更新间隔默认 300 秒（5 分钟），可在「添加集成」的首个地点步骤，或「选项流 → 重新设置地点」里自定义（单位：秒）。
 
 ---
 
