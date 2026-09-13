@@ -8,3 +8,5 @@
 # 该版本 Requires-Python >=3.14，因此 .github 流水线里的 Python 镜像必须 >=3.14
 # （本地 .venv 与客户端的 python:3.14 一致），否则装不到此版本。
 pytest-homeassistant-custom-component==0.13.365
+# 集成运行依赖（sensor.py 用 pypinyin 生成实体 ID），测试环境也需安装。
+pypinyin>=0.50.0
