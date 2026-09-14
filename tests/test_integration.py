@@ -39,18 +39,17 @@ async def test_user_flow_single_location(hass) -> None:
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
-            CONF_NAME: "测试",
             CONF_LONGITUDE: 120.0,
             CONF_LATITUDE: 30.0,
-            CONF_SCAN_INTERVAL: 300,
+            CONF_SCAN_INTERVAL: 5,
         },
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert result["title"] == "测试"
-    assert result["data"][CONF_NAME] == "测试"
+    assert result["title"] == "降水 (30.00°N, 120.00°E)"
+    assert result["data"][CONF_NAME] == "降水 (30.00°N, 120.00°E)"
     assert result["data"][CONF_LONGITUDE] == 120.0
     assert result["data"][CONF_LATITUDE] == 30.0
-    assert result["data"][CONF_SCAN_INTERVAL] == 300
+    assert result["data"][CONF_SCAN_INTERVAL] == 5
 
 
 async def test_coordinator_update(hass, aioclient_mock) -> None:
@@ -75,7 +74,7 @@ async def test_sensor_setup(hass, aioclient_mock) -> None:
             CONF_NAME: "测试",
             CONF_LONGITUDE: 120.0,
             CONF_LATITUDE: 30.0,
-            CONF_SCAN_INTERVAL: 300,
+            CONF_SCAN_INTERVAL: 5,
         },
         version=1,
     )
@@ -101,7 +100,7 @@ async def test_options_flow_edit_location(hass, aioclient_mock) -> None:
             CONF_NAME: "测试",
             CONF_LONGITUDE: 120.0,
             CONF_LATITUDE: 30.0,
-            CONF_SCAN_INTERVAL: 300,
+            CONF_SCAN_INTERVAL: 5,
         },
         version=1,
     )
@@ -119,15 +118,14 @@ async def test_options_flow_edit_location(hass, aioclient_mock) -> None:
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         {
-            CONF_NAME: "测试改",
             CONF_LONGITUDE: 121.0,
             CONF_LATITUDE: 31.0,
-            CONF_SCAN_INTERVAL: 600,
+            CONF_SCAN_INTERVAL: 10,
         },
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.data[CONF_NAME] == "测试改"
+    assert entry.data[CONF_NAME] == "降水 (31.00°N, 121.00°E)"
     assert entry.data[CONF_LONGITUDE] == 121.0
     assert entry.data[CONF_LATITUDE] == 31.0
-    assert entry.data[CONF_SCAN_INTERVAL] == 600
+    assert entry.data[CONF_SCAN_INTERVAL] == 10
     await hass.async_block_till_done()

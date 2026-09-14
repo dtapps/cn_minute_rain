@@ -14,7 +14,7 @@ from .const import (
     CONF_LONGITUDE,
     CONF_NAME,
     CONF_SCAN_INTERVAL,
-    DEFAULT_SCAN_INTERVAL_SECONDS,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
     DOMAIN,
     PLATFORMS,
 )
@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     session = async_get_clientsession(hass)
     scan_interval = timedelta(
-        seconds=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS)
+        minutes=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
     )
     loc = {
         CONF_NAME: entry.data[CONF_NAME],

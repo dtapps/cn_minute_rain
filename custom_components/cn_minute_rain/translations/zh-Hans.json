@@ -4,10 +4,10 @@
       "user": {
         "title": "添加一个地点",
         "data": {
-          "name": "地点名称",
+          
           "longitude": "经度",
           "latitude": "纬度",
-          "scan_interval": "更新间隔（秒）"
+          "scan_interval": "更新间隔（分钟）"
         }
       }
     }
@@ -27,10 +27,10 @@
       "init": {
         "title": "修改地点",
         "data": {
-          "name": "地点名称",
+          
           "longitude": "经度",
           "latitude": "纬度",
-          "scan_interval": "更新间隔（秒）"
+          "scan_interval": "更新间隔（分钟）"
         }
       }
     }
