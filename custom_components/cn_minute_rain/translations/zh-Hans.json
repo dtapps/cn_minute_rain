@@ -9,12 +9,6 @@
           "latitude": "纬度",
           "scan_interval": "更新间隔（秒）"
         }
-      },
-      "add_another": {
-        "title": "是否继续添加地点？",
-        "data": {
-          "add_another": "继续添加地点"
-        }
       }
     }
   },
@@ -31,33 +25,13 @@
   "options": {
     "step": {
       "init": {
-        "title": "管理地点",
-        "data": {
-          "action": "操作"
-        }
-      },
-      "user": {
-        "title": "添加一个地点",
+        "title": "修改地点",
         "data": {
           "name": "地点名称",
           "longitude": "经度",
           "latitude": "纬度",
           "scan_interval": "更新间隔（秒）"
         }
-      },
-      "add_another": {
-        "title": "是否继续添加地点？",
-        "data": {
-          "add_another": "继续添加地点"
-        }
-      }
-    }
-  },
-  "selector": {
-    "action": {
-      "options": {
-        "keep": "保持现状",
-        "edit": "重新设置地点"
       }
     }
   }

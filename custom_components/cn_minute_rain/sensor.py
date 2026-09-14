@@ -70,15 +70,14 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up cn_minute_rain sensors from a config entry."""
-    coordinators: list[CnMinuteRainCoordinator] = hass.data[DOMAIN][entry.entry_id]
+    """Set up cn_minute_rain sensors from a config entry (每条目一个地点)."""
+    coord: CnMinuteRainCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[SensorEntity] = []
     current_ids: list[str] = []
-    for coord in coordinators:
-        for description in SENSOR_DESCRIPTIONS:
-            sensor = CnMinuteRainSensor(coord, entry, description)
-            entities.append(sensor)
-            current_ids.append(sensor.unique_id)
+    for description in SENSOR_DESCRIPTIONS:
+        sensor = CnMinuteRainSensor(coord, entry, description)
+        entities.append(sensor)
+        current_ids.append(sensor.unique_id)
 
     # 清理已被删除地点的残留实体
     reg = er.async_get(hass)

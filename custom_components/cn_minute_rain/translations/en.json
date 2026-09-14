@@ -9,12 +9,6 @@
           "latitude": "Latitude",
           "scan_interval": "Update interval (seconds)"
         }
-      },
-      "add_another": {
-        "title": "Add another location?",
-        "data": {
-          "add_another": "Add another location"
-        }
       }
     }
   },
@@ -31,33 +25,13 @@
   "options": {
     "step": {
       "init": {
-        "title": "Manage locations",
-        "data": {
-          "action": "Action"
-        }
-      },
-      "user": {
-        "title": "Add a location",
+        "title": "Edit location",
         "data": {
           "name": "Location name",
           "longitude": "Longitude",
           "latitude": "Latitude",
           "scan_interval": "Update interval (seconds)"
         }
-      },
-      "add_another": {
-        "title": "Add another location?",
-        "data": {
-          "add_another": "Add another location"
-        }
-      }
-    }
-  },
-  "selector": {
-    "action": {
-      "options": {
-        "keep": "Keep current",
-        "edit": "Reset locations"
       }
     }
   }

@@ -9,7 +9,6 @@ PLATFORMS = ["sensor"]
 CONF_NAME = "name"
 CONF_LONGITUDE = "longitude"
 CONF_LATITUDE = "latitude"
-CONF_LOCATIONS = "locations"
 CONF_SCAN_INTERVAL = "scan_interval"
 
 API_URL = "https://mpf.weather.com.cn/mpf_v3/webgis/minute"

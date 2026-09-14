@@ -11,9 +11,9 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.cn_minute_rain.coordinator import CnMinuteRainCoordinator
 from custom_components.cn_minute_rain.const import (
     CONF_LATITUDE,
-    CONF_LOCATIONS,
     CONF_LONGITUDE,
     CONF_NAME,
+    CONF_SCAN_INTERVAL,
     DOMAIN,
 )
 
@@ -29,7 +29,7 @@ def _expected_url(lon: float, lat: float) -> str:
     return str(URL(API_URL).with_query(lon=lon, lat=lat))
 
 
-async def test_user_flow_add_two_locations(hass) -> None:
+async def test_user_flow_single_location(hass) -> None:
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
@@ -38,26 +38,19 @@ async def test_user_flow_add_two_locations(hass) -> None:
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        {CONF_NAME: "测试", CONF_LONGITUDE: 120.0, CONF_LATITUDE: 30.0},
-    )
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "add_another"
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"add_another": True}
-    )
-    assert result["step_id"] == "user"
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {CONF_NAME: "测试2", CONF_LONGITUDE: 121.0, CONF_LATITUDE: 31.0},
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"add_another": False}
+        {
+            CONF_NAME: "测试",
+            CONF_LONGITUDE: 120.0,
+            CONF_LATITUDE: 30.0,
+            CONF_SCAN_INTERVAL: 300,
+        },
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert CONF_LOCATIONS in result["data"]
-    assert len(result["data"][CONF_LOCATIONS]) == 2
+    assert result["title"] == "测试"
+    assert result["data"][CONF_NAME] == "测试"
+    assert result["data"][CONF_LONGITUDE] == 120.0
+    assert result["data"][CONF_LATITUDE] == 30.0
+    assert result["data"][CONF_SCAN_INTERVAL] == 300
 
 
 async def test_coordinator_update(hass, aioclient_mock) -> None:
@@ -76,9 +69,15 @@ async def test_coordinator_update(hass, aioclient_mock) -> None:
 
 
 async def test_sensor_setup(hass, aioclient_mock) -> None:
-    loc = {CONF_NAME: "测试", CONF_LONGITUDE: 120.0, CONF_LATITUDE: 30.0}
     entry = MockConfigEntry(
-        domain=DOMAIN, data={CONF_LOCATIONS: [loc]}, version=1
+        domain=DOMAIN,
+        data={
+            CONF_NAME: "测试",
+            CONF_LONGITUDE: 120.0,
+            CONF_LATITUDE: 30.0,
+            CONF_SCAN_INTERVAL: 300,
+        },
+        version=1,
     )
     entry.add_to_hass(hass)
     aioclient_mock.get(_expected_url(120.0, 30.0), json=API_RESPONSE)
