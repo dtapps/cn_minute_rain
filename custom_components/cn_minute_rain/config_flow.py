@@ -58,22 +58,27 @@ class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    async def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry):
+        """HA 以同步方式调用此方法，不要写成 async（否则返回的是未 await 的协程，点“设置”会 500）。"""
         return CnMinuteRainOptionsFlow(config_entry)
 
 
 class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
-    """选项流：修改本条目对应的单个地点与更新间隔。"""
+    """选项流：修改本条目对应的单个地点与更新间隔。
+
+    注意：基类 OptionsFlow 的 `config_entry` 是只读 property，且 __init__ 里不可用，
+    因此这里用私有属性 `self._entry` 保存条目，避免给只读属性赋值导致 500。
+    """
 
     def __init__(self, config_entry) -> None:
-        self.config_entry = config_entry
+        self._entry = config_entry
 
     async def async_step_init(self, user_input=None) -> FlowResult:
         if user_input is not None:
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
+                self._entry,
                 data={
-                    **self.config_entry.data,
+                    **self._entry.data,
                     CONF_NAME: user_input[CONF_NAME],
                     CONF_LONGITUDE: user_input[CONF_LONGITUDE],
                     CONF_LATITUDE: user_input[CONF_LATITUDE],
@@ -85,7 +90,7 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=_loc_schema(
                 self.hass,
-                scan_interval_default=self.config_entry.data.get(
+                scan_interval_default=self._entry.data.get(
                     CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS
                 ),
             ),

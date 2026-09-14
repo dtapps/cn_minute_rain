@@ -91,3 +91,43 @@ async def test_sensor_setup(hass, aioclient_mock) -> None:
         state = hass.states.get(entity_id)
         assert state is not None
         assert state.state is not None
+
+
+async def test_options_flow_edit_location(hass, aioclient_mock) -> None:
+    """打开已添加条目的“设置”(选项流)应能加载并改地点，不应 500。"""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_NAME: "测试",
+            CONF_LONGITUDE: 120.0,
+            CONF_LATITUDE: 30.0,
+            CONF_SCAN_INTERVAL: 300,
+        },
+        version=1,
+    )
+    entry.add_to_hass(hass)
+    aioclient_mock.get(_expected_url(120.0, 30.0), json=API_RESPONSE)
+    aioclient_mock.get(_expected_url(121.0, 31.0), json=API_RESPONSE)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_NAME: "测试改",
+            CONF_LONGITUDE: 121.0,
+            CONF_LATITUDE: 31.0,
+            CONF_SCAN_INTERVAL: 600,
+        },
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert entry.data[CONF_NAME] == "测试改"
+    assert entry.data[CONF_LONGITUDE] == 121.0
+    assert entry.data[CONF_LATITUDE] == 31.0
+    assert entry.data[CONF_SCAN_INTERVAL] == 600
+    await hass.async_block_till_done()
