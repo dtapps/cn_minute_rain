@@ -1,4 +1,5 @@
 """Tests for value parsing in the coordinator."""
+
 from __future__ import annotations
 
 from custom_components.cn_minute_rain.coordinator import parse_values

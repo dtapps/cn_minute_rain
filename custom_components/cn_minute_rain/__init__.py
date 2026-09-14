@@ -1,4 +1,5 @@
 """中国分钟级降水预报集成。"""
+
 from __future__ import annotations
 
 import logging

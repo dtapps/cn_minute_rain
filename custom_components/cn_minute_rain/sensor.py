@@ -1,4 +1,5 @@
 """Sensor platform for cn_minute_rain."""
+
 from __future__ import annotations
 
 import logging
@@ -102,7 +103,9 @@ class CnMinuteRainSensor(CoordinatorEntity, SensorEntity):
     ) -> None:
         super().__init__(coord)
         self.entity_description = description
-        self._attr_unique_id = f"{entry.entry_id}_{coord.location_name}_{description.key}"
+        self._attr_unique_id = (
+            f"{entry.entry_id}_{coord.location_name}_{description.key}"
+        )
         # 实体 ID 形如 sensor.cn_minute_rain_<地点拼音>_<nearby|tip>：
         # 带集成名便于识别，地点拼音保证中文也能生成可读、不撞车的 ASCII ID。
         loc_slug = "_".join(lazy_pinyin(coord.location_name))

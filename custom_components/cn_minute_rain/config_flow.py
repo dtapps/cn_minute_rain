@@ -1,4 +1,5 @@
 """Config flow for cn_minute_rain."""
+
 from __future__ import annotations
 
 import voluptuous as vol

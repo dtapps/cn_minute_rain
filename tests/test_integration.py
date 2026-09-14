@@ -1,4 +1,5 @@
 """End-to-end tests for config flow, coordinator and sensor setup (mocked API)."""
+
 from __future__ import annotations
 
 from datetime import timedelta

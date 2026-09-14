@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for cn_minute_rain."""
+
 from __future__ import annotations
 
 import asyncio
@@ -70,7 +71,9 @@ class CnMinuteRainCoordinator(DataUpdateCoordinator):
                 resp.raise_for_status()
                 data = await resp.json()
         except Exception as err:  # noqa: BLE001
-            raise UpdateFailed(f"获取分钟级降水失败 ({self.location_name}): {err}") from err
+            raise UpdateFailed(
+                f"获取分钟级降水失败 ({self.location_name}): {err}"
+            ) from err
 
         return {
             "msg": data.get("msg", "未知"),

@@ -4,7 +4,6 @@
       "user": {
         "title": "Add a location",
         "data": {
-          
           "longitude": "Longitude",
           "latitude": "Latitude",
           "scan_interval": "Update interval (minutes)"
@@ -27,7 +26,6 @@
       "init": {
         "title": "Edit location",
         "data": {
-          
           "longitude": "Longitude",
           "latitude": "Latitude",
           "scan_interval": "Update interval (minutes)"

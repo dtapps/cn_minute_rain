@@ -1,4 +1,5 @@
 """Tests for the rain-tip computation logic."""
+
 from __future__ import annotations
 
 from custom_components.cn_minute_rain.sensor import _compute_tip
