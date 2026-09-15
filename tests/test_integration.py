@@ -54,6 +54,23 @@ async def test_user_flow_single_location(hass) -> None:
     assert result["data"][CONF_SCAN_INTERVAL] == 5
 
 
+async def test_user_flow_does_not_prefill_ha_location(hass) -> None:
+    """回归：首次添加表单不得把 HA 实例坐标当默认预填，否则用户直接保存会污染条目，
+    导致后续“修改地点”永远回显 HA 坐标。"""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    assert result["type"] == FlowResultType.FORM
+    schema = result["data_schema"]
+    suggested = {}
+    for key in schema.schema:
+        if isinstance(key, vol.Marker) and key.description:
+            suggested[key.schema] = key.description.get("suggested_value")
+    # 经纬度不应预填成 HA 实例坐标（应为空/None，强制用户显式输入）
+    assert CONF_LATITUDE not in suggested or suggested[CONF_LATITUDE] is None
+    assert CONF_LONGITUDE not in suggested or suggested[CONF_LONGITUDE] is None
+
+
 async def test_coordinator_update(hass, aioclient_mock) -> None:
     loc = {CONF_NAME: "测试", CONF_LONGITUDE: 120.0, CONF_LATITUDE: 30.0}
     coord = CnMinuteRainCoordinator(

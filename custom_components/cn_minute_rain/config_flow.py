@@ -40,20 +40,19 @@ def _loc_schema(hass) -> vol.Schema:
 
 
 def _suggested_values(hass, entry_data=None) -> dict:
-    """构造预填值字典（首次添加，user 流）：回退到 HA 实例所在位置。"""
+    """构造 user 流（首次添加）的预填值。
+
+    经纬度**绝不**预填 HA 实例坐标：早期版本把 HA 坐标当默认预填，用户直接保存后
+    条目里就存了 HA 坐标，“修改地点”永远回显 HA 坐标（正是用户反复遇到的坑）。
+    这里只给“更新间隔”一个默认值，经纬度留空，强制用户显式输入要追踪的地点。
+    """
+    suggested = {CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES}
     if entry_data:
-        return {
-            CONF_LONGITUDE: entry_data.get(CONF_LONGITUDE, hass.config.longitude),
-            CONF_LATITUDE: entry_data.get(CONF_LATITUDE, hass.config.latitude),
-            CONF_SCAN_INTERVAL: entry_data.get(
-                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
-            ),
-        }
-    return {
-        CONF_LONGITUDE: hass.config.longitude,
-        CONF_LATITUDE: hass.config.latitude,
-        CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES,
-    }
+        if CONF_LONGITUDE in entry_data:
+            suggested[CONF_LONGITUDE] = entry_data[CONF_LONGITUDE]
+        if CONF_LATITUDE in entry_data:
+            suggested[CONF_LATITUDE] = entry_data[CONF_LATITUDE]
+    return suggested
 
 
 def _entry_suggested(entry, hass) -> dict:
