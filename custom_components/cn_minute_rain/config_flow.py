@@ -23,37 +23,41 @@ def _format_name(latitude: float, longitude: float) -> str:
     return f"降水 ({lat_s}, {lon_s})"
 
 
-def _loc_schema(
-    hass,
-    longitude_default: float | None = None,
-    latitude_default: float | None = None,
-    scan_interval_minutes_default: int = DEFAULT_SCAN_INTERVAL_MINUTES,
-) -> vol.Schema:
-    """经纬度默认取当前 HA 实例所在的经纬度；scan_interval_minutes_default 为“分钟”单位的刷新间隔。
+def _loc_schema(hass) -> vol.Schema:
+    """基础经纬度表单（不带默认值）。
 
-    longitude_default / latitude_default 用于“编辑已有条目”时回显真实存储的经纬度，
-    避免编辑时经纬度被重置为 HA 实例所在的经纬度。名称不在此填写，
-    由经纬度自动生成（见 _format_name）。
+    预填值统一通过 FlowHandler.add_suggested_values_to_schema 注入到字段的
+    description.suggested_value（HA 前端只认这个来预填），而不是 vol.Required 的
+    default —— 后者在本版本序列化给前端时不会携带，导致打开“设置”时纬度框为空。
     """
     return vol.Schema(
         {
-            vol.Required(
-                CONF_LONGITUDE,
-                default=longitude_default
-                if longitude_default is not None
-                else hass.config.longitude,
-            ): vol.Coerce(float),
-            vol.Required(
-                CONF_LATITUDE,
-                default=latitude_default
-                if latitude_default is not None
-                else hass.config.latitude,
-            ): vol.Coerce(float),
-            vol.Required(
-                CONF_SCAN_INTERVAL, default=scan_interval_minutes_default
-            ): vol.Coerce(int),
+            vol.Required(CONF_LONGITUDE): vol.Coerce(float),
+            vol.Required(CONF_LATITUDE): vol.Coerce(float),
+            vol.Required(CONF_SCAN_INTERVAL): vol.Coerce(int),
         }
     )
+
+
+def _suggested_values(hass, entry_data=None) -> dict:
+    """构造预填值字典。
+
+    编辑已有条目（options 流）时使用已存储的经纬度；首次添加（user 流）时
+    回退到 HA 实例所在位置。
+    """
+    if entry_data:
+        return {
+            CONF_LONGITUDE: entry_data.get(CONF_LONGITUDE, hass.config.longitude),
+            CONF_LATITUDE: entry_data.get(CONF_LATITUDE, hass.config.latitude),
+            CONF_SCAN_INTERVAL: entry_data.get(
+                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
+            ),
+        }
+    return {
+        CONF_LONGITUDE: hass.config.longitude,
+        CONF_LATITUDE: hass.config.latitude,
+        CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES,
+    }
 
 
 class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -75,7 +79,9 @@ class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         return self.async_show_form(
             step_id="user",
-            data_schema=_loc_schema(self.hass),
+            data_schema=self.add_suggested_values_to_schema(
+                _loc_schema(self.hass), _suggested_values(self.hass)
+            ),
         )
 
     @staticmethod
@@ -109,14 +115,11 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
                 },
             )
             return self.async_create_entry(title="", data={})
+        # 关键修复：打开“设置”（标题“修改地点”）时，把已存储的经纬度作为
+        # suggested_value 注入表单，否则前端纬度框为空。
         return self.async_show_form(
             step_id="init",
-            data_schema=_loc_schema(
-                self.hass,
-                longitude_default=self._entry.data.get(CONF_LONGITUDE),
-                latitude_default=self._entry.data.get(CONF_LATITUDE),
-                scan_interval_minutes_default=self._entry.data.get(
-                    CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
-                ),
+            data_schema=self.add_suggested_values_to_schema(
+                _loc_schema(self.hass), _suggested_values(self.hass, self._entry.data)
             ),
         )

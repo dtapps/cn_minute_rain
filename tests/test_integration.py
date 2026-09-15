@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import voluptuous as vol
 from datetime import timedelta
 from yarl import URL
 
@@ -115,6 +116,15 @@ async def test_options_flow_edit_location(hass, aioclient_mock) -> None:
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "init"
+    # 打开“设置”（标题“修改地点”）时，已存经纬度应作为 suggested_value 注入表单，
+    # 让前端预填纬度框，而不是 HA 实例所在位置或空值。
+    schema = result["data_schema"]
+    suggested = {}
+    for key in schema.schema:
+        if isinstance(key, vol.Marker) and key.description:
+            suggested[key.schema] = key.description.get("suggested_value")
+    assert suggested[CONF_LATITUDE] == 30.0
+    assert suggested[CONF_LONGITUDE] == 120.0
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
