@@ -185,3 +185,44 @@ async def test_options_flow_reads_from_options_when_only_in_options(
     # 必须读到 options 里用户设置的值，而非 HA 实例坐标
     assert suggested[CONF_LATITUDE] == 21.0
     assert suggested[CONF_LONGITUDE] == 110.0
+
+
+async def test_options_flow_prefers_data_over_poisoned_options(
+    hass, aioclient_mock
+) -> None:
+    """回归（用户实际场景）：旧 bug 把 HA 坐标写进 entry.options 造成污染，
+    打开“设置”必须回显 entry.data 里的真实地点，而非被污染的 options 值。"""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        # data 里是用户真实设置的地点
+        data={
+            CONF_NAME: "测试",
+            CONF_LONGITUDE: 120.0,
+            CONF_LATITUDE: 30.0,
+            CONF_SCAN_INTERVAL: 5,
+        },
+        # options 被旧 bug 污染成 HA 实例坐标（用户报告的实际数值）
+        options={
+            CONF_LONGITUDE: 110.981294,
+            CONF_LATITUDE: 21.517321232896705,
+            CONF_SCAN_INTERVAL: 3,
+        },
+        version=1,
+    )
+    entry.add_to_hass(hass)
+    aioclient_mock.get(_expected_url(120.0, 30.0), json=API_RESPONSE)
+    aioclient_mock.get(_expected_url(110.981294, 21.517321232896705), json=API_RESPONSE)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == FlowResultType.FORM
+    schema = result["data_schema"]
+    suggested = {}
+    for key in schema.schema:
+        if isinstance(key, vol.Marker) and key.description:
+            suggested[key.schema] = key.description.get("suggested_value")
+    # 必须回显 data 里的真实地点（30 / 120），而不是被污染的 options（HA 坐标）
+    assert suggested[CONF_LATITUDE] == 30.0
+    assert suggested[CONF_LONGITUDE] == 120.0

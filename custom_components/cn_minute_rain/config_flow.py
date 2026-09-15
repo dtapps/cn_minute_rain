@@ -59,22 +59,26 @@ def _suggested_values(hass, entry_data=None) -> dict:
 def _entry_suggested(entry, hass) -> dict:
     """从已有条目读取已存储的经纬度，用于 options 流（“修改地点”）预填。
 
-    读取优先级：entry.options > entry.data > HA 实例坐标。
-    早期版本把位置写进了 entry.options，而当前条目可能只存在于 entry.data，
-    因此必须两者都查，否则旧条目打开“设置”会回显成 HA 实例坐标（错误值）。
+    读取优先级：entry.data > entry.options > HA 实例坐标。
+
+    这里 **data 优先于 options** 是刻意的：早期版本的 options 表单默认把 HA
+    实例坐标作为预填值，用户每次打开点“保存”都会把 HA 坐标写进 entry.options，
+    导致 options 被 HA 坐标“污染”。而 entry.data 是添加条目时填的真实地点，
+    更可信。改成 data 优先后，打开“修改地点”会先显示真实地点，用户确认/修正后
+    保存，data 与 options 都会刷新为正确值，污染自愈。
     """
-    opts = entry.options or {}
     data = entry.data or {}
+    opts = entry.options or {}
     return {
-        CONF_LONGITUDE: opts.get(
-            CONF_LONGITUDE, data.get(CONF_LONGITUDE, hass.config.longitude)
+        CONF_LONGITUDE: data.get(
+            CONF_LONGITUDE, opts.get(CONF_LONGITUDE, hass.config.longitude)
         ),
-        CONF_LATITUDE: opts.get(
-            CONF_LATITUDE, data.get(CONF_LATITUDE, hass.config.latitude)
+        CONF_LATITUDE: data.get(
+            CONF_LATITUDE, opts.get(CONF_LATITUDE, hass.config.latitude)
         ),
-        CONF_SCAN_INTERVAL: opts.get(
+        CONF_SCAN_INTERVAL: data.get(
             CONF_SCAN_INTERVAL,
-            data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES),
+            opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES),
         ),
     }
 
