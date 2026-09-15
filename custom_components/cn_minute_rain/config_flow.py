@@ -75,14 +75,19 @@ class CnMinuteRainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title=options[CONF_NAME], data={}, options=options
             )
 
-        # 经纬度**不**预填 HA 实例坐标（旧版本把 HA 坐标当默认预填，用户直接保存后
-        # 条目里就存了 HA 坐标，导致“修改地点”永远回显 HA 坐标）。这里只给更新间隔
-        # 一个默认值，经纬度留空，强制用户显式输入要追踪的地点。
+        # 经纬度预填 HA 实例坐标作为便捷默认（与参考项目 ha_tianyuan_calendar 一致）：
+        # 若完全留空不预填，NumberSelector 的输入框会回退显示其最小值（-90/-180），
+        # 反而像是“已被填了错误值”。这里直接用 HA 配置里的真实坐标，不加任何硬编码兜底，
+        # 用户按需改成自己的地点即可。
         return self.async_show_form(
             step_id="user",
             data_schema=self.add_suggested_values_to_schema(
                 _loc_schema(self.hass),
-                {CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES},
+                {
+                    CONF_LATITUDE: float(self.hass.config.latitude),
+                    CONF_LONGITUDE: float(self.hass.config.longitude),
+                    CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES,
+                },
             ),
         )
 
