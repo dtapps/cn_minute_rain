@@ -12,7 +12,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers import entity_registry as er
-from pypinyin import lazy_pinyin
 
 from .const import DOMAIN, PRECIP_WINDOW_MINUTES
 from .coordinator import CnMinuteRainCoordinator
@@ -103,15 +102,17 @@ class CnMinuteRainSensor(CoordinatorEntity, SensorEntity):
     ) -> None:
         super().__init__(coord)
         self.entity_description = description
-        self._attr_unique_id = (
-            f"{entry.entry_id}_{coord.location_name}_{description.key}"
-        )
-        # 实体 ID 形如 sensor.cn_minute_rain_<地点拼音>_<nearby|tip>：
-        # 带集成名便于识别，地点拼音保证中文也能生成可读、不撞车的 ASCII ID。
-        loc_slug = "_".join(lazy_pinyin(coord.location_name))
+        # unique_id 只依赖 entry.entry_id（条目生命周期内恒定），不掺入名称/坐标，
+        # 否则改名、改坐标后 HA 会误判为“新实体”而重复创建。
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        # 实体 ID 形如 sensor.cn_minute_rain_<纬度>_<经度>_<nearby|tip>：
+        # 用坐标生成可读 ASCII ID；坐标不变则 ID 不变，避免重复创建。
+        loc_slug = f"{coord.latitude:.2f}_{coord.longitude:.2f}".replace(
+            "-", "m"
+        ).replace(".", "_")
         self._attr_suggested_object_id = f"cn_minute_rain_{loc_slug}_{description.key}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{entry.entry_id}_{coord.location_name}")},
+            identifiers={(DOMAIN, entry.entry_id)},
             name=coord.location_name,
             manufacturer="中国天气网",
             model="分钟级降水预报",
