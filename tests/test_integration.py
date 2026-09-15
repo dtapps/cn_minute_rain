@@ -140,3 +140,48 @@ async def test_options_flow_edit_location(hass, aioclient_mock) -> None:
     assert entry.data[CONF_LATITUDE] == 31.0
     assert entry.data[CONF_SCAN_INTERVAL] == 10
     await hass.async_block_till_done()
+
+    # 闭环验证：改完重新打开“设置”，应回显刚保存的新经纬度（确认持久化 + 预填）
+    result2 = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result2["type"] == FlowResultType.FORM
+    schema2 = result2["data_schema"]
+    suggested2 = {}
+    for key in schema2.schema:
+        if isinstance(key, vol.Marker) and key.description:
+            suggested2[key.schema] = key.description.get("suggested_value")
+    assert suggested2[CONF_LATITUDE] == 31.0
+    assert suggested2[CONF_LONGITUDE] == 121.0
+
+
+async def test_options_flow_reads_from_options_when_only_in_options(
+    hass, aioclient_mock
+) -> None:
+    """回归：早期版本把位置写进 entry.options 的条目，打开“设置”应回显 options 里的值，
+    而不是 HA 实例坐标（即用户报告的“纬度不是我设置的值”）。"""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        # data 里没有经纬度，只有 name；真实位置存在 options 中
+        data={CONF_NAME: "测试"},
+        options={
+            CONF_LONGITUDE: 110.0,
+            CONF_LATITUDE: 21.0,
+            CONF_SCAN_INTERVAL: 5,
+        },
+        version=1,
+    )
+    entry.add_to_hass(hass)
+    aioclient_mock.get(_expected_url(110.0, 21.0), json=API_RESPONSE)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == FlowResultType.FORM
+    schema = result["data_schema"]
+    suggested = {}
+    for key in schema.schema:
+        if isinstance(key, vol.Marker) and key.description:
+            suggested[key.schema] = key.description.get("suggested_value")
+    # 必须读到 options 里用户设置的值，而非 HA 实例坐标
+    assert suggested[CONF_LATITUDE] == 21.0
+    assert suggested[CONF_LONGITUDE] == 110.0

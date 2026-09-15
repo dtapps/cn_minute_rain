@@ -1,10 +1,12 @@
 
 # ==================== 更新 / 拉取 ====================
 
-sync: ## 拉取 CNB 最新并以 fast-forward 合并（保留本地未提交改动）
+sync: ## 拉取远端最新并硬对齐 origin/master（兼容强制推送，自动暂存未提交改动）
 	git fetch origin
-	git merge --ff-only origin/master
-	@echo "已同步 origin/master 最新代码，本地未提交改动已保留"
+	git stash push --include-untracked -m "make sync 自动暂存" || true
+	git reset --hard origin/master
+	git stash pop || true
+	@echo "✅ 已同步 origin/master 最新代码"
 
 # ==================== 推送 ====================
 

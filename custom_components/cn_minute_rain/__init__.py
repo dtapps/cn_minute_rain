@@ -28,13 +28,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up cn_minute_rain from a config entry (每个条目一个地点)."""
     hass.data.setdefault(DOMAIN, {})
     session = async_get_clientsession(hass)
+    # 经纬度读取优先级：entry.options > entry.data，兼容早期版本把位置写进 options 的条目
+    opts = entry.options or {}
+    data = entry.data or {}
     scan_interval = timedelta(
-        minutes=entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
+        minutes=opts.get(
+            CONF_SCAN_INTERVAL, data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
+        )
     )
     loc = {
-        CONF_NAME: entry.data[CONF_NAME],
-        CONF_LONGITUDE: entry.data[CONF_LONGITUDE],
-        CONF_LATITUDE: entry.data[CONF_LATITUDE],
+        CONF_NAME: data.get(CONF_NAME),
+        CONF_LONGITUDE: opts.get(CONF_LONGITUDE, data.get(CONF_LONGITUDE)),
+        CONF_LATITUDE: opts.get(CONF_LATITUDE, data.get(CONF_LATITUDE)),
     }
     coord = CnMinuteRainCoordinator(hass, session, loc, scan_interval)
     await coord.async_config_entry_first_refresh()

@@ -40,11 +40,7 @@ def _loc_schema(hass) -> vol.Schema:
 
 
 def _suggested_values(hass, entry_data=None) -> dict:
-    """构造预填值字典。
-
-    编辑已有条目（options 流）时使用已存储的经纬度；首次添加（user 流）时
-    回退到 HA 实例所在位置。
-    """
+    """构造预填值字典（首次添加，user 流）：回退到 HA 实例所在位置。"""
     if entry_data:
         return {
             CONF_LONGITUDE: entry_data.get(CONF_LONGITUDE, hass.config.longitude),
@@ -57,6 +53,29 @@ def _suggested_values(hass, entry_data=None) -> dict:
         CONF_LONGITUDE: hass.config.longitude,
         CONF_LATITUDE: hass.config.latitude,
         CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_MINUTES,
+    }
+
+
+def _entry_suggested(entry, hass) -> dict:
+    """从已有条目读取已存储的经纬度，用于 options 流（“修改地点”）预填。
+
+    读取优先级：entry.options > entry.data > HA 实例坐标。
+    早期版本把位置写进了 entry.options，而当前条目可能只存在于 entry.data，
+    因此必须两者都查，否则旧条目打开“设置”会回显成 HA 实例坐标（错误值）。
+    """
+    opts = entry.options or {}
+    data = entry.data or {}
+    return {
+        CONF_LONGITUDE: opts.get(
+            CONF_LONGITUDE, data.get(CONF_LONGITUDE, hass.config.longitude)
+        ),
+        CONF_LATITUDE: opts.get(
+            CONF_LATITUDE, data.get(CONF_LATITUDE, hass.config.latitude)
+        ),
+        CONF_SCAN_INTERVAL: opts.get(
+            CONF_SCAN_INTERVAL,
+            data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES),
+        ),
     }
 
 
@@ -103,6 +122,8 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None) -> FlowResult:
         if user_input is not None:
             name = _format_name(user_input[CONF_LATITUDE], user_input[CONF_LONGITUDE])
+            # 同时更新 data 与 options，保证两个来源一致：
+            # 旧条目可能把位置存进了 options，新条目存进 data，统一后读取才不会回显错值。
             self.hass.config_entries.async_update_entry(
                 self._entry,
                 title=name,
@@ -114,12 +135,20 @@ class CnMinuteRainOptionsFlow(config_entries.OptionsFlow):
                     CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL],
                 },
             )
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(
+                title="",
+                data={
+                    CONF_LONGITUDE: user_input[CONF_LONGITUDE],
+                    CONF_LATITUDE: user_input[CONF_LATITUDE],
+                    CONF_SCAN_INTERVAL: user_input[CONF_SCAN_INTERVAL],
+                },
+            )
         # 关键修复：打开“设置”（标题“修改地点”）时，把已存储的经纬度作为
-        # suggested_value 注入表单，否则前端纬度框为空。
+        # suggested_value 注入表单。读取优先级 options > data > HA 实例，
+        # 否则旧条目会回显成 HA 实例坐标（即“纬度不是我设置的值”）。
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                _loc_schema(self.hass), _suggested_values(self.hass, self._entry.data)
+                _loc_schema(self.hass), _entry_suggested(self._entry, self.hass)
             ),
         )
