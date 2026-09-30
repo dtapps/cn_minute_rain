@@ -124,13 +124,11 @@ class CnMinuteRainOptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         opts = self.config_entry.options
+        # 优先回显已存储的地点（entry.options），仅在条目未存任何坐标时才退回到
+        # HA 实例坐标；不写死任何具体城市坐标作为兜底。
         suggested = {
-            CONF_LATITUDE: float(
-                opts.get(CONF_LATITUDE, self.hass.config.latitude or 39.9)
-            ),
-            CONF_LONGITUDE: float(
-                opts.get(CONF_LONGITUDE, self.hass.config.longitude or 120.0)
-            ),
+            CONF_LATITUDE: float(opts.get(CONF_LATITUDE, self.hass.config.latitude)),
+            CONF_LONGITUDE: float(opts.get(CONF_LONGITUDE, self.hass.config.longitude)),
             CONF_SCAN_INTERVAL: int(
                 opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
             ),

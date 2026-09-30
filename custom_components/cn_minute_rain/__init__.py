@@ -27,7 +27,9 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up cn_minute_rain from a config entry (每个条目一个地点)."""
     hass.data.setdefault(DOMAIN, {})
-    session = async_get_clientsession(hass)
+    # 中国天气网接口证书偶尔过期，默认 SSL 校验会失败导致取不到数据，
+    # 这里专门用一个跳过证书校验的客户端会话（HA 推荐做法：verify_ssl=False）。
+    session = async_get_clientsession(hass, verify_ssl=False)
     # 地点信息统一存于 entry.options（与 config_flow 一致）。旧条目可能仍在 data 里，
     # 因此读取优先级：entry.options > entry.data。
     opts = entry.options or {}
