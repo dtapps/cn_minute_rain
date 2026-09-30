@@ -61,12 +61,19 @@ jobs:
           )
           echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
 
+      - name: 安装格式化工具（ruff；prettier / taplo 由 npx 自动拉取）
+        run: |
+          pip install -q ruff
+
+      - name: 自动格式化（make format）
+        run: make format
+
       - name: 将版本号折入当前提交并推送（不产生单独的版本提交）
         id: push
         run: |
           git config user.email "github-actions@github.com"
           git config user.name "github-actions"
-          git add custom_components/cn_minute_rain/manifest.json
+          git add -A
           git commit --amend --no-edit
           git push --force origin HEAD:master
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -76,7 +83,7 @@ jobs:
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
           name: v${{ steps.bump.outputs.new_version }}
-          commitish: ${{ steps.push.outputs.sha }}
+          target_commitish: ${{ steps.push.outputs.sha }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
