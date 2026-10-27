@@ -1,5 +1,7 @@
 # 中国分钟级降水预报 (cn_minute_rain)
 
+[![Validate](https://github.com/dtapps/cn_minute_rain/actions/workflows/validate.yml/badge.svg)](https://github.com/dtapps/cn_minute_rain/actions/workflows/validate.yml) [![Codecov](https://codecov.io/gh/dtapps/cn_minute_rain/branch/master/graph/badge.svg)](https://codecov.io/gh/dtapps/cn_minute_rain) [![Coveralls](https://coveralls.io/repos/github/dtapps/cn_minute_rain/badge.svg?branch=master)](https://coveralls.io/github/dtapps/cn_minute_rain?branch=master) [![GitHub Release](https://img.shields.io/github/v/release/dtapps/cn_minute_rain)](https://github.com/dtapps/cn_minute_rain/releases) [![License: MIT](https://img.shields.io/github/license/dtapps/cn_minute_rain)](LICENSE) [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+
 Home Assistant 自定义集成，基于[中国天气网分钟级降水 API](https://mpf.weather.com.cn) 提供未来 2 小时临近降雨预报。支持**多地点**，每个地点自动生成两个实体：
 
 - **`<地点>临近降雨`**：状态为预报文案（如“未来2小时不会降雨”），属性含 `values`（强度数组）、`time`、`longitude`、`latitude`。

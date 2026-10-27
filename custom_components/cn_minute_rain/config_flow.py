@@ -123,14 +123,18 @@ class CnMinuteRainOptionsFlowHandler(config_entries.OptionsFlow):
                 },
             )
 
-        opts = self.config_entry.options
-        # 优先回显已存储的地点（entry.options），仅在条目未存任何坐标时才退回到
-        # HA 实例坐标；不写死任何具体城市坐标作为兜底。
+        # 升级前的旧条目坐标存在 entry.data 里，新条目存在 entry.options 里。
+        # 只读 options 会让旧条目回显成 HA 实例坐标，用户一保存就把自己的地点覆盖掉。
+        stored = {**(self.config_entry.data or {}), **(self.config_entry.options or {})}
+        # 优先回显已存储的地点，仅在条目未存任何坐标时才退回到 HA 实例坐标；
+        # 不写死任何具体城市坐标作为兜底。
         suggested = {
-            CONF_LATITUDE: float(opts.get(CONF_LATITUDE, self.hass.config.latitude)),
-            CONF_LONGITUDE: float(opts.get(CONF_LONGITUDE, self.hass.config.longitude)),
+            CONF_LATITUDE: float(stored.get(CONF_LATITUDE, self.hass.config.latitude)),
+            CONF_LONGITUDE: float(
+                stored.get(CONF_LONGITUDE, self.hass.config.longitude)
+            ),
             CONF_SCAN_INTERVAL: int(
-                opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
+                stored.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
             ),
         }
         return self.async_show_form(

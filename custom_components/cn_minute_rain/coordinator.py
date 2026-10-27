@@ -7,6 +7,7 @@ import logging
 from datetime import timedelta
 from typing import Any
 
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -14,6 +15,7 @@ from .const import (
     CONF_LATITUDE,
     CONF_LONGITUDE,
     CONF_NAME,
+    REQUEST_TIMEOUT_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -66,11 +68,11 @@ class CnMinuteRainCoordinator(DataUpdateCoordinator):
             "Referer": "https://www.weather.com.cn/",
         }
         try:
-            async with asyncio.timeout(10):
+            async with asyncio.timeout(REQUEST_TIMEOUT_SECONDS):
                 resp = await self.session.get(url, headers=headers)
                 resp.raise_for_status()
                 data = await resp.json()
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             raise UpdateFailed(
                 f"获取分钟级降水失败 ({self.location_name}): {err}"
             ) from err

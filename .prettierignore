@@ -1,6 +1,4 @@
-.venv
-node_modules
 .git
-dist
-build
-*.min.*
+.pytest_cache
+.ruff_cache
+.venv

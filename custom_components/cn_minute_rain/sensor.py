@@ -8,10 +8,10 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN, PRECIP_WINDOW_MINUTES
 from .coordinator import CnMinuteRainCoordinator
@@ -35,7 +35,9 @@ SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
 def _compute_tip(values: list[float]) -> dict[str, Any]:
     """根据强度数组推导降雨提示（逻辑移植自原 Jinja 模板）。"""
     n = len(values)
-    if n == 0 or sum(values) == 0:
+    # 全 0 或异常负值都按无雨处理：只看 sum()==0 会让全负数组落到下面的
+    # first==-1 分支，拼出“约 -60 分钟后开始下雨”这种鬼话。
+    if n == 0 or max(values) <= 0:
         return {
             "state": "无雨",
             "rain_minutes": 0,

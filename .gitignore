@@ -10,3 +10,10 @@ __pycache__/
 # 发布流水线临时产物（不应提交进仓库）
 LATEST_CHANGELOG.md
 release_options.yml
+
+# Coverage
+.coverage
+coverage.xml
+coverage.lcov
+junit.xml
+htmlcov/

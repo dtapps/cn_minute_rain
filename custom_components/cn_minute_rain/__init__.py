@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from datetime import timedelta
 
 from .const import (
     CONF_LATITUDE,
@@ -48,8 +47,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coord = CnMinuteRainCoordinator(hass, session, loc, scan_interval)
     await coord.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id] = coord
+    # 选项（地点/间隔）改动后必须重载条目：coordinator 是在本函数里按旧值构造的，
+    # 不注册监听器的话改完地点得重启 HA 才生效。
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """选项变更后重载条目，让新地点与更新间隔真正生效。"""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

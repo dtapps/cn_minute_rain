@@ -1,22 +1,15 @@
 
-# ==================== 更新 / 拉取 ====================
+.PHONY: sync upstream push push-force test format format-py format-web \
+        format-toml format-txt format-markdown help
 
-sync: ## 拉取远端最新并硬对齐 origin/master（兼容强制推送，自动暂存未提交改动）
-	git fetch origin
-	git stash push --include-untracked -m "make sync 自动暂存" || true
-	git reset --hard origin/master
-	git stash pop || true
-	@echo "✅ 已同步 origin/master 最新代码"
+# 直接 `make` 打菜单
+.DEFAULT_GOAL := help
 
-# ==================== 推送 ====================
+# ==================== 帮助 ====================
 
-push: ## 推送到所有远程仓库
-	git push origin HEAD
-	@echo "推送完成！"
-
-push-force: ## 强制推送到所有远程仓库（忽略冲突）
-	git push --force origin HEAD
-	@echo "强制推送完成！"
+help: ## 显示所有可用目标
+	@grep -hE '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 # ==================== 代码格式化 ====================
 
@@ -59,3 +52,36 @@ format-markdown:
 	done
 	@echo "[Format] Markdown 格式化完成（markdownfmt）。"
 
+# ==================== 测试 ====================
+
+# 测试栈是 pytest-homeassistant-custom-component，会带入整个 Home Assistant。
+# 依赖锁在 requirements_test.txt，CI 用的是同一个文件，本地和 CI 跑的是同一套。
+PY := .venv/bin/python
+
+test: .venv/.test-deps ## 跑测试（缺环境会自动装，首次约 3 分钟）
+	$(PY) -m pytest -q $(PYTEST_ARGS)
+
+# 只跑一部分：make test PYTEST_ARGS="tests/test_config_flow.py -k scan"
+.venv/.test-deps: requirements_test.txt
+	@echo "准备测试环境（首次会拉 Home Assistant，约 3 分钟）…"
+	python3 -m venv .venv
+	.venv/bin/pip install -q --upgrade pip
+	.venv/bin/pip install -q -r requirements_test.txt
+	@touch .venv/.test-deps
+
+# ==================== 更新 / 拉取 ====================
+
+sync: ## 拉取 origin 最新并以 fast-forward 合并（保留本地未提交改动）
+	git fetch origin
+	git merge --ff-only origin/master
+	@echo "已同步 origin/master 最新代码，本地未提交改动已保留"
+
+# ==================== 推送 ====================
+
+push: ## 推送到所有远程仓库
+	git push origin HEAD
+	@echo "推送完成！"
+
+push-force: ## 强制推送到所有远程仓库（忽略冲突）
+	git push --force origin HEAD
+	@echo "强制推送完成！"
