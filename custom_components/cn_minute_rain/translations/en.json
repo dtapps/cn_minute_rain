@@ -2,12 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "Add a location",
         "data": {
-          "longitude": "Longitude",
           "latitude": "Latitude",
+          "longitude": "Longitude",
           "scan_interval": "Update interval (minutes)"
-        }
+        },
+        "title": "Add a location"
       }
     }
   },
@@ -24,12 +24,12 @@
   "options": {
     "step": {
       "init": {
-        "title": "Edit location",
         "data": {
-          "longitude": "Longitude",
           "latitude": "Latitude",
+          "longitude": "Longitude",
           "scan_interval": "Update interval (minutes)"
-        }
+        },
+        "title": "Edit location"
       }
     }
   }
