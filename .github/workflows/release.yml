@@ -3,18 +3,18 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      bump:
-        description: "版本号递增方式"
+      version:
+        description: "版本号（如 1.2.3，可带前缀 v）"
         required: true
-        default: "patch"
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
+        type: string
 
 permissions:
   contents: write
+
+# 同一分支的多次触发取消旧的运行，避免排队浪费。
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   release:
@@ -24,66 +24,90 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 设置 Python
         uses: actions/setup-python@v7
         with:
+          # 与本地开发一致，且贴近 HA 2026.6 运行时（HA 2026.x 已采用 3.14）
           python-version: "3.14"
 
-      - name: pytest 把关
-        run: |
-          pip install -q -r requirements_test.txt
-          pytest -qq
-
-      - name: 升级 manifest 版本号
+      - name: 动态写入指定版本号到 manifest
         id: bump
+        env:
+          VERSION_INPUT: ${{ github.event.inputs.version }}
         run: |
-          NEW=$(python - <<'PY'
+          VERSION="${VERSION_INPUT#[vV]}"
+          VERSION="$(printf '%s' "$VERSION" | tr -d '[:space:]')"
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::版本号格式不正确：'$VERSION'，应形如 1.2.3"
+            exit 1
+          fi
+          python - "$VERSION" <<'PY'
           import json
+          import sys
+
           path = "custom_components/cn_minute_rain/manifest.json"
           with open(path, encoding="utf-8") as f:
               data = json.load(f)
-          major, minor, patch = (int(x) for x in data.get("version", "0.0.0").split("."))
-          bump = "${{ github.event.inputs.bump }}".strip().lower()
-          if bump == "major":
-              major, minor, patch = major + 1, 0, 0
-          elif bump == "minor":
-              minor, patch = minor + 1, 0
-          else:
-              patch += 1
-          data["version"] = f"{major}.{minor}.{patch}"
+          data["version"] = sys.argv[1]
           with open(path, "w", encoding="utf-8") as f:
               json.dump(data, f, ensure_ascii=False, indent=2)
               f.write("\n")
-          print(data["version"])
+          print(f"manifest version -> {data['version']}")
           PY
-          )
-          echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
+          echo "new_version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: 安装格式化工具（ruff；prettier / taplo 由 npx 自动拉取）
+      - name: 打包 custom_components 为发布附件
         run: |
-          pip install -q ruff
+          rm -f cn_minute_rain.zip
+          zip -r cn_minute_rain.zip custom_components/cn_minute_rain \
+            -x "*/__pycache__/*" "*.pyc" "*/.DS_Store"
+          echo "=== 附件内容预览 ==="
+          unzip -l cn_minute_rain.zip | head -30
 
-      - name: 自动格式化（make format）
-        run: make format
-
-      - name: 将版本号折入当前提交并推送（不产生单独的版本提交）
-        id: push
+      - name: 生成变更日志（上一版 → 本版）
+        id: changelog
         run: |
-          git config user.email "github-actions@github.com"
-          git config user.name "github-actions"
-          git add -A
-          git commit --amend --no-edit
-          git push --force origin HEAD:master
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          NEW_TAG="v${{ steps.bump.outputs.new_version }}"
+          # 上一个已存在的版本 tag（排除本次要建的 tag，防止重跑时范围为空）
+          PREV_TAG=$(git tag -l "v*" --sort=-v:refname | grep -vx "$NEW_TAG" | head -n 1 || true)
+          REPO_URL="https://github.com/${{ github.repository }}"
+
+          if [ -z "$PREV_TAG" ]; then
+            RANGE="HEAD"
+            PREV_DESC="首次发布，以下为本版全部提交："
+            COMPARE=""
+          else
+            RANGE="${PREV_TAG}..HEAD"
+            PREV_DESC="自 ${PREV_TAG} 以来的全部变化："
+            COMPARE="**完整对比 / Full Changelog**: ${REPO_URL}/compare/${PREV_TAG}...${NEW_TAG}"
+          fi
+
+          {
+            echo "## 变更内容 / Changes"
+            echo ""
+            echo "${PREV_DESC}"
+            echo ""
+            git log --no-merges --pretty=format:'- %s (%h)' "$RANGE"
+            echo ""
+            echo ""
+            echo "## 提交统计 / Stats"
+            echo ""
+            echo "- 提交数: $(git log --no-merges --oneline "$RANGE" | wc -l | tr -d ' ')"
+            echo ""
+            printf '%s\n' "$COMPARE"
+          } > RELEASE_NOTES.md
+
+          echo "=== RELEASE_NOTES.md ==="
+          cat RELEASE_NOTES.md
 
       - name: 发布 GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
           name: v${{ steps.bump.outputs.new_version }}
-          target_commitish: ${{ steps.push.outputs.sha }}
-          generate_release_notes: true
+          target_commitish: ${{ github.sha }}
+          body_path: RELEASE_NOTES.md
+          files: cn_minute_rain.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
