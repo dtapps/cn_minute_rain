@@ -120,3 +120,21 @@ cards:
 - **状态一直「无雨」？** 先检查 `<地点>临近降雨` 的 `values` 属性是否为空；空数组会被判定为「无雨」。
 - **想换接口的返回字段？** 若接口实际返回结构与 `msg / values / time` 不同，调整 `coordinator.py` 的 `parse_values` 与 `_async_update_data` 即可。
 - **HACS 添加失败？** 确认仓库地址、类别选「集成」；若平台不兼容可走手动安装。
+
+## Star 走势
+
+<details>
+<summary><b>点击展开查看图表</b></summary>
+
+[![Star 走势](https://api.star-history.com/chart?repos=dtapps/cn_minute_rain&type=date&legend=top-left)](https://www.star-history.com/?repos=dtapps%2Fcn_minute_rain&type=date&legend=top-left)
+
+</details>
+
+## 下载量统计图
+
+<details>
+<summary><b>点击展开查看图表</b></summary>
+
+[![下载量统计图](https://release-monitor.com/chart/dtapps/cn_minute_rain.svg?stable=5)](https://release-monitor.com/#/dtapps/cn_minute_rain)
+
+</details>
